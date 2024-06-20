@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wyniki Uczestników</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        select {
+            font-size: 1.2em;
+            color: #333;
+            padding: 10px;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 300px;
+        }
+        #current_score {
+            margin-top: 20px;
+            font-size: 1.5em;
+            text-align: center;
+            color: #007bff;
+        }
+        #results {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.2em;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .result-1 {
+            background-color: #ffcccc;
+        }
+        .result1 {
+            background-color: #ccffcc;
+        }
+        .result0 {
+            background-color: white;
+        }
+        #refresh-button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #refresh-button:hover {
+            background-color: #0056b3;
+        }
+        .spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        async function fetchData() {
+            const response = await fetch('/data');
+            const data = await response.json();
+            return data;
+        }
+
+        function updateResults(index) {
+            var data = window.data;
+            var match = data[index];
+
+            document.getElementById('current_score').innerHTML = 'Obecny wynik:<br>' + match.team1 + ' ' + match.R1 + ' : ' + match.R2 + ' ' + match.team2;
+
+            var participants = match.participants;
+            var tableBody = document.getElementById('participants_table').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            participants.forEach(participant => {
+                var row = tableBody.insertRow();
+                row.className = 'result' + participant.Result;
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                cell1.innerHTML = participant.Uczestnik;
+                cell2.innerHTML = participant.pR1 + ' : ' + participant.pR2;
+            });
+        }
+
+        async function refreshData() {
+            document.getElementById('spinner').style.display = 'block';
+            window.data = await fetchData();
+            document.getElementById('spinner').style.display = 'none';
+            updateResults(document.querySelector('select').value);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            window.data = {{ data|tojson }};
+            document.querySelector('select').addEventListener('change', function() {
+                updateResults(this.value);
+            });
+            document.getElementById('refresh-button').addEventListener('click', refreshData);
+            updateResults(0);
+        });
+    </script>
+</head>
+<body>
+    <h1>Wyniki Uczestników</h1>
+    <select>
+        <option value="0">Mecz 1: {{ data[0].team1 }} vs {{ data[0].team2 }}</option>
+        <option value="1">Mecz 2: {{ data[1].team1 }} vs {{ data[1].team2 }}</option>
+        <option value="2">Mecz 3: {{ data[2].team1 }} vs {{ data[2].team2 }}</option>
+    </select>
+    <h2 id="current_score"></h2>
+    <button id="refresh-button">Odśwież</button>
+    <div id="results">
+        <table id="participants_table">
+            <thead>
+                <tr>
+                    <th>Uczestnik</th>
+                    <th>Wynik</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <div id="spinner" class="spinner"></div>
+</body>
+</html>
